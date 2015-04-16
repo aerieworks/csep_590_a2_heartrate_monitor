@@ -43,11 +43,8 @@ public class DataPlotFragment extends Fragment implements Listener<DataSeries> {
 
   public void addSeries(final DataSeries series) {
     dataSerieses.add(series);
-    series.onSeriesUpdated.listen(this);
-
     if (plot != null) {
-      addSeriesToPlot(series);
-      plot.redraw();
+      addSeriesToPlot(series, false);
     }
   }
 
@@ -58,10 +55,8 @@ public class DataPlotFragment extends Fragment implements Listener<DataSeries> {
     final View view = inflater.inflate(R.layout.fragment_data_plot, container, false);
 
     plot = (XYPlot) view.findViewById(R.id.dataPlot);
-    plot.centerOnRangeOrigin(0);
-
     for (final DataSeries series : dataSerieses) {
-      addSeriesToPlot(series);
+      addSeriesToPlot(series, true);
     }
 
     plot.setTicksPerRangeLabel(3);
@@ -90,9 +85,16 @@ public class DataPlotFragment extends Fragment implements Listener<DataSeries> {
     }
   }
 
-  private void addSeriesToPlot(final DataSeries series) {
+  private void addSeriesToPlot(final DataSeries series, final boolean skipRedraw) {
+    series.onSeriesUpdated.listen(this);
+
     final LineAndPointFormatter formatter = new LineAndPointFormatter();
     formatter.configure(getActivity().getApplicationContext(), series.getFormatterId());
     plot.addSeries(series, formatter);
+
+    plot.centerOnRangeOrigin(0);
+    if (!skipRedraw) {
+      plot.redraw();
+    }
   }
 }
