@@ -1,4 +1,4 @@
-package com.richanna.filters;
+package com.richanna.data.filters;
 
 import android.util.Log;
 
@@ -8,7 +8,7 @@ import com.richanna.data.DataPoint;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MeanShifter implements DataFilter {
+public class MeanShifter implements DataFilter<DataPoint> {
 
   private final int windowSize;
   private final List<DataPoint> dataPointWindow = new ArrayList<>();

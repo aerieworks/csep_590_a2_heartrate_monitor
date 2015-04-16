@@ -1,4 +1,4 @@
-package com.richanna.filters;
+package com.richanna.data.filters;
 
 import com.richanna.data.DataFilter;
 import com.richanna.data.DataPoint;
@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MedianFilter implements DataFilter {
+public class MedianFilter implements DataFilter<DataPoint> {
 
   private final int windowSize;
   private final List<DataPoint> dataPointWindow = new ArrayList<>();

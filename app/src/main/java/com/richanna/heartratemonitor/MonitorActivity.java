@@ -8,12 +8,40 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SurfaceView;
+import android.view.WindowManager;
 
+import com.richanna.sensors.CameraMonitor;
 import com.richanna.sensors.SensorInfo;
 
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+
 public class MonitorActivity extends ActionBarActivity implements ActionBar.TabListener {
+
+  private CameraMonitor cameraMonitor;
+
+  private final BaseLoaderCallback openCvLoadListener = new BaseLoaderCallback(this) {
+    @Override
+    public void onManagerConnected(int status) {
+      switch (status) {
+        case LoaderCallbackInterface.SUCCESS:
+          Log.i("OpenCV", "OpenCV loaded successfully");
+          if (cameraMonitor != null) {
+            cameraMonitor.resume();
+          }
+          break;
+        default:
+          super.onManagerConnected(status);
+          break;
+      }
+    }
+  };
 
   /**
    * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -33,6 +61,7 @@ public class MonitorActivity extends ActionBarActivity implements ActionBar.TabL
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    OpenCVLoader.initDebug();
     setContentView(R.layout.activity_monitor);
 
     // Set up the action bar.
@@ -68,9 +97,30 @@ public class MonitorActivity extends ActionBarActivity implements ActionBar.TabL
               .setText(mSectionsPagerAdapter.getPageTitle(i))
               .setTabListener(this));
     }
+
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    final CameraBridgeViewBase cameraView = (CameraBridgeViewBase) findViewById(R.id.cameraView);
+    cameraView.setVisibility(SurfaceView.VISIBLE);
+    cameraView.enableView();
+    cameraMonitor = new CameraMonitor(cameraView);
   }
 
+  @Override
+  public void onResume() {
+    super.onResume();
+    OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_6, this, openCvLoadListener);
+    if (cameraMonitor != null) {
+      cameraMonitor.resume();
+    }
+  }
 
+  @Override
+  public void onPause() {
+    super.onPause();
+    if (cameraMonitor != null) {
+      cameraMonitor.pause();
+    }
+  }
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     // Inflate the menu; this adds items to the action bar if it is present.

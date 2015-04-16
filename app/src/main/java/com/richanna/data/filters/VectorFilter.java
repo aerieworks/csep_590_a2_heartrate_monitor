@@ -1,9 +1,9 @@
-package com.richanna.filters;
+package com.richanna.data.filters;
 
 import com.richanna.data.DataFilter;
 import com.richanna.data.DataPoint;
 
-public class VectorFilter implements DataFilter {
+public class VectorFilter implements DataFilter<DataPoint> {
 
   private final int vectorIndex;
   private int index = 0;

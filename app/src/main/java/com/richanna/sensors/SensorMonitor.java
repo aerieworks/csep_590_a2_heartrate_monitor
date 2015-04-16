@@ -33,7 +33,7 @@ public class SensorMonitor extends DataGenerator implements SensorEventListener 
 
     if (event.sensor.getType() == sensorType) {
       final DataPoint dataPoint = new DataPoint(event.timestamp, event.values);
-      newDataPointEvent.fire(dataPoint);
+      newDatumEvent.fire(dataPoint);
     }
   }
 

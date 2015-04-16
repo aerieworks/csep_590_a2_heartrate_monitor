@@ -11,9 +11,9 @@
         android:layout_height="wrap_content"/>
 
     <fragment
-        android:name="com.richanna.visualization.ui.DataPlotFragment"
+        android:name="com.richanna.data.visualization.ui.DataPlotFragment"
         android:id="@+id/accelerationPlot"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"/>
 
 </LinearLayout>
