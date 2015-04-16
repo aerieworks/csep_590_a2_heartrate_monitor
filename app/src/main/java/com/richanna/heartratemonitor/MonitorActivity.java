@@ -1,30 +1,37 @@
 package com.richanna.heartratemonitor;
 
+import android.content.Context;
+import android.hardware.SensorManager;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
+import com.androidplot.ui.TextOrientationType;
+import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.XYPlot;
+import com.richanna.data.DataPoint;
+import com.richanna.data.DataStream;
+import com.richanna.data.filters.VectorFilter;
+import com.richanna.data.visualization.DataSeries;
+import com.richanna.data.visualization.StreamingSeries;
+import com.richanna.events.Listener;
 import com.richanna.sensors.CameraMonitor;
 import com.richanna.sensors.SensorInfo;
+import com.richanna.sensors.SensorMonitor;
 
 import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
-public class MonitorActivity extends ActionBarActivity implements ActionBar.TabListener {
+public class MonitorActivity extends ActionBarActivity implements Listener<DataSeries> {
 
   private CameraMonitor cameraMonitor;
+  private SensorMonitor accelerationMonitor;
+  private XYPlot plot;
 
   private final BaseLoaderCallback openCvLoadListener = new BaseLoaderCallback(this) {
     @Override
@@ -43,66 +50,45 @@ public class MonitorActivity extends ActionBarActivity implements ActionBar.TabL
     }
   };
 
-  /**
-   * The {@link android.support.v4.view.PagerAdapter} that will provide
-   * fragments for each of the sections. We use a
-   * {@link FragmentPagerAdapter} derivative, which will keep every
-   * loaded fragment in memory. If this becomes too memory intensive, it
-   * may be best to switch to a
-   * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-   */
-  SectionsPagerAdapter mSectionsPagerAdapter;
-
-  /**
-   * The {@link ViewPager} that will host the section contents.
-   */
-  ViewPager mViewPager;
-
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    OpenCVLoader.initDebug();
     setContentView(R.layout.activity_monitor);
 
-    // Set up the action bar.
-    final ActionBar actionBar = getSupportActionBar();
-    actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-
-    // Create the adapter that will return a fragment for each of the three
-    // primary sections of the activity.
-    mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-    // Set up the ViewPager with the sections adapter.
-    mViewPager = (ViewPager) findViewById(R.id.pager);
-    mViewPager.setAdapter(mSectionsPagerAdapter);
-
-    // When swiping between different sections, select the corresponding
-    // tab. We can also use ActionBar.Tab#select() to do this if we have
-    // a reference to the Tab.
-    mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-      @Override
-      public void onPageSelected(int position) {
-        actionBar.setSelectedNavigationItem(position);
-      }
-    });
-
-    // For each of the sections in the app, add a tab to the action bar.
-    for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
-      // Create a tab with text corresponding to the page title defined by
-      // the adapter. Also specify this Activity object, which implements
-      // the TabListener interface, as the callback (listener) for when
-      // this tab is selected.
-      actionBar.addTab(
-          actionBar.newTab()
-              .setText(mSectionsPagerAdapter.getPageTitle(i))
-              .setTabListener(this));
-    }
+    OpenCVLoader.initDebug();
 
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    final CameraBridgeViewBase cameraView = (CameraBridgeViewBase) findViewById(R.id.cameraView);
+    final CameraView cameraView = (CameraView) findViewById(R.id.cameraView);
     cameraView.setVisibility(SurfaceView.VISIBLE);
     cameraView.enableView();
     cameraMonitor = new CameraMonitor(cameraView);
+
+    plot = (XYPlot) findViewById(R.id.rawDataPlot);
+    final SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+    accelerationMonitor = new SensorMonitor(sensorManager, SensorInfo.Accelerometer.getSensorType());
+    accelerationMonitor.resume();
+
+    final DataStream<DataPoint> xAccelStream = new DataStream(accelerationMonitor);
+    xAccelStream.addFilter(new VectorFilter(0));
+    final DataStream<DataPoint> yAccelStream = new DataStream(accelerationMonitor);
+    yAccelStream.addFilter(new VectorFilter(1));
+    final DataStream<DataPoint> zAccelStream = new DataStream(accelerationMonitor);
+    zAccelStream.addFilter(new VectorFilter(2));
+
+    addSeriesToPlot(new StreamingSeries(xAccelStream, "X", DataSeries.DomainSource.Index, R.xml.line_point_formatter_acceleration_x, 300));
+    addSeriesToPlot(new StreamingSeries(yAccelStream, "Y", DataSeries.DomainSource.Index, R.xml.line_point_formatter_acceleration_y, 300));
+    addSeriesToPlot(new StreamingSeries(zAccelStream, "Z", DataSeries.DomainSource.Index, R.xml.line_point_formatter_acceleration_z, 300));
+
+    plot.centerOnRangeOrigin(0);
+    plot.setTicksPerRangeLabel(3);
+    plot.getGraphWidget().setDomainLabelPaint(null);
+    plot.getGraphWidget().setDomainOriginLabelPaint(null);
+    plot.getLayoutManager().remove(plot.getLegendWidget());
+    plot.getLayoutManager().remove(plot.getTitleWidget());
+    plot.getLayoutManager().remove(plot.getDomainLabelWidget());
+    plot.getRangeLabelWidget().setOrientation(TextOrientationType.HORIZONTAL);
+
+
   }
 
   @Override
@@ -112,6 +98,12 @@ public class MonitorActivity extends ActionBarActivity implements ActionBar.TabL
     if (cameraMonitor != null) {
       cameraMonitor.resume();
     }
+    if (accelerationMonitor != null) {
+      accelerationMonitor.resume();
+    }
+    if (plot != null) {
+      plot.redraw();
+    }
   }
 
   @Override
@@ -120,7 +112,11 @@ public class MonitorActivity extends ActionBarActivity implements ActionBar.TabL
     if (cameraMonitor != null) {
       cameraMonitor.pause();
     }
+    if (accelerationMonitor != null) {
+      accelerationMonitor.pause();
+    }
   }
+
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     // Inflate the menu; this adds items to the action bar if it is present.
@@ -144,48 +140,17 @@ public class MonitorActivity extends ActionBarActivity implements ActionBar.TabL
   }
 
   @Override
-  public void onTabSelected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-    // When the given tab is selected, switch to the corresponding page in
-    // the ViewPager.
-    mViewPager.setCurrentItem(tab.getPosition());
+  public void tell(final DataSeries series) {
+    if (plot != null) {
+      plot.redraw();
+    }
   }
 
-  @Override
-  public void onTabUnselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-  }
+  private void addSeriesToPlot(final DataSeries series) {
+    series.onSeriesUpdated.listen(this);
 
-  @Override
-  public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-  }
-
-  /**
-   * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-   * one of the sections/tabs/pages.
-   */
-  public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-    public SectionsPagerAdapter(FragmentManager fm) {
-      super(fm);
-    }
-
-    @Override
-    public Fragment getItem(int position) {
-      return MonitorFragment.newInstance();
-    }
-
-    @Override
-    public int getCount() {
-      // Show 1 total pages.
-      return 1;
-    }
-
-    @Override
-    public CharSequence getPageTitle(int position) {
-      switch (position) {
-        case 0:
-          return getString(SensorInfo.Accelerometer.getSensorNameId());
-      }
-      return null;
-    }
+    final LineAndPointFormatter formatter = new LineAndPointFormatter();
+    formatter.configure(this, series.getFormatterId());
+    plot.addSeries(series, formatter);
   }
 }
