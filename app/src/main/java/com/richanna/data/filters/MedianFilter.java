@@ -2,12 +2,13 @@ package com.richanna.data.filters;
 
 import com.richanna.data.DataFilter;
 import com.richanna.data.DataPoint;
+import com.richanna.data.DataProviderBase;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MedianFilter implements DataFilter<DataPoint> {
+public class MedianFilter extends DataProviderBase<DataPoint> implements DataFilter<DataPoint, DataPoint> {
 
   private final int windowSize;
   private final List<DataPoint> dataPointWindow = new ArrayList<>();
@@ -17,7 +18,7 @@ public class MedianFilter implements DataFilter<DataPoint> {
   }
 
   @Override
-  public DataPoint apply(DataPoint dataPoint) {
+  public void tell(DataPoint dataPoint) {
     dataPointWindow.add(dataPoint);
     if (dataPointWindow.size() >= windowSize) {
       while (dataPointWindow.size() > windowSize) {
@@ -29,10 +30,8 @@ public class MedianFilter implements DataFilter<DataPoint> {
         medianValues[i] = calculateMedian(i);
       }
 
-      return new DataPoint(dataPoint.getTimestamp(), medianValues);
+      provideDatum(new DataPoint(dataPoint.getTimestamp(), medianValues));
     }
-
-    return null;
   }
 
   private float calculateMedian(final int valueIndex) {

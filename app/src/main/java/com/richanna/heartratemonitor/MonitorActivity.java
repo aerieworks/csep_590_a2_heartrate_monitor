@@ -1,7 +1,5 @@
 package com.richanna.heartratemonitor;
 
-import android.content.Context;
-import android.hardware.SensorManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,15 +11,14 @@ import android.view.WindowManager;
 import com.androidplot.ui.TextOrientationType;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.XYPlot;
-import com.richanna.data.DataPoint;
-import com.richanna.data.DataStream;
-import com.richanna.data.filters.VectorFilter;
+import com.richanna.data.filters.FftFilter;
+import com.richanna.data.filters.IntensityFilter;
+import com.richanna.data.filters.MeanShifter;
 import com.richanna.data.visualization.DataSeries;
 import com.richanna.data.visualization.StreamingSeries;
+import com.richanna.data.visualization.WindowedSeries;
 import com.richanna.events.Listener;
 import com.richanna.sensors.CameraMonitor;
-import com.richanna.sensors.SensorInfo;
-import com.richanna.sensors.SensorMonitor;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -30,8 +27,8 @@ import org.opencv.android.OpenCVLoader;
 public class MonitorActivity extends ActionBarActivity implements Listener<DataSeries> {
 
   private CameraMonitor cameraMonitor;
-  private SensorMonitor accelerationMonitor;
-  private XYPlot plot;
+  private XYPlot rawPlot;
+  private XYPlot fftPlot;
 
   private final BaseLoaderCallback openCvLoadListener = new BaseLoaderCallback(this) {
     @Override
@@ -60,35 +57,22 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     final CameraView cameraView = (CameraView) findViewById(R.id.cameraView);
     cameraView.setVisibility(SurfaceView.VISIBLE);
-    cameraView.enableView();
     cameraMonitor = new CameraMonitor(cameraView);
 
-    plot = (XYPlot) findViewById(R.id.rawDataPlot);
-    final SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-    accelerationMonitor = new SensorMonitor(sensorManager, SensorInfo.Accelerometer.getSensorType());
-    accelerationMonitor.resume();
+    rawPlot = initializePlot(R.id.rawDataPlot);
+    fftPlot = initializePlot(R.id.fftPlot);
 
-    final DataStream<DataPoint> xAccelStream = new DataStream(accelerationMonitor);
-    xAccelStream.addFilter(new VectorFilter(0));
-    final DataStream<DataPoint> yAccelStream = new DataStream(accelerationMonitor);
-    yAccelStream.addFilter(new VectorFilter(1));
-    final DataStream<DataPoint> zAccelStream = new DataStream(accelerationMonitor);
-    zAccelStream.addFilter(new VectorFilter(2));
+    final IntensityFilter intensityFilter = new IntensityFilter();
+    cameraMonitor.addOnNewDatumListener(intensityFilter);
+    //addSeriesToPlot(rawPlot, new StreamingSeries(intensityFilter, "Intensity", 0, R.xml.line_point_formatter_acceleration_x, 128));
 
-    addSeriesToPlot(new StreamingSeries(xAccelStream, "X", DataSeries.DomainSource.Index, R.xml.line_point_formatter_acceleration_x, 300));
-    addSeriesToPlot(new StreamingSeries(yAccelStream, "Y", DataSeries.DomainSource.Index, R.xml.line_point_formatter_acceleration_y, 300));
-    addSeriesToPlot(new StreamingSeries(zAccelStream, "Z", DataSeries.DomainSource.Index, R.xml.line_point_formatter_acceleration_z, 300));
+    final MeanShifter demeanedIntensity = new MeanShifter(15);
+    intensityFilter.addOnNewDatumListener(demeanedIntensity);
+    addSeriesToPlot(rawPlot, new StreamingSeries(demeanedIntensity, "Demeaned", 0, R.xml.line_point_formatter_acceleration_y, 128));
 
-    plot.centerOnRangeOrigin(0);
-    plot.setTicksPerRangeLabel(3);
-    plot.getGraphWidget().setDomainLabelPaint(null);
-    plot.getGraphWidget().setDomainOriginLabelPaint(null);
-    plot.getLayoutManager().remove(plot.getLegendWidget());
-    plot.getLayoutManager().remove(plot.getTitleWidget());
-    plot.getLayoutManager().remove(plot.getDomainLabelWidget());
-    plot.getRangeLabelWidget().setOrientation(TextOrientationType.HORIZONTAL);
-
-
+    final FftFilter intensityFft = new FftFilter(32);
+    demeanedIntensity.addOnNewDatumListener(intensityFft);
+    addSeriesToPlot(fftPlot, new WindowedSeries(intensityFft, "FFT", R.xml.line_point_formatter_acceleration_z, 128));
   }
 
   @Override
@@ -98,11 +82,11 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
     if (cameraMonitor != null) {
       cameraMonitor.resume();
     }
-    if (accelerationMonitor != null) {
-      accelerationMonitor.resume();
+    if (rawPlot != null) {
+      rawPlot.redraw();
     }
-    if (plot != null) {
-      plot.redraw();
+    if (fftPlot != null) {
+      fftPlot.redraw();
     }
   }
 
@@ -111,9 +95,6 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
     super.onPause();
     if (cameraMonitor != null) {
       cameraMonitor.pause();
-    }
-    if (accelerationMonitor != null) {
-      accelerationMonitor.pause();
     }
   }
 
@@ -141,12 +122,28 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
 
   @Override
   public void tell(final DataSeries series) {
-    if (plot != null) {
-      plot.redraw();
+    if (rawPlot != null) {
+      rawPlot.redraw();
+    }
+    if (fftPlot != null) {
+      fftPlot.redraw();
     }
   }
 
-  private void addSeriesToPlot(final DataSeries series) {
+  private XYPlot initializePlot(final int plotId) {
+    final XYPlot plot = (XYPlot) findViewById(plotId);
+    plot.centerOnRangeOrigin(0);
+    plot.setTicksPerRangeLabel(3);
+    plot.getGraphWidget().setDomainLabelPaint(null);
+    plot.getGraphWidget().setDomainOriginLabelPaint(null);
+    plot.getLayoutManager().remove(plot.getLegendWidget());
+    plot.getLayoutManager().remove(plot.getTitleWidget());
+    plot.getLayoutManager().remove(plot.getDomainLabelWidget());
+    plot.getRangeLabelWidget().setOrientation(TextOrientationType.HORIZONTAL);
+    return plot;
+  }
+
+  private void addSeriesToPlot(final XYPlot plot, final DataSeries series) {
     series.onSeriesUpdated.listen(this);
 
     final LineAndPointFormatter formatter = new LineAndPointFormatter();

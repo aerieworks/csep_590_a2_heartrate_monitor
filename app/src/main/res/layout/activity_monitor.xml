@@ -5,6 +5,7 @@
                                    android:layout_height="match_parent"
                                    android:orientation="vertical"
                                    tools:context=".MonitorActivity">
+
     <com.richanna.heartratemonitor.CameraView
         android:id="@+id/cameraView"
         android:layout_width="fill_parent"
@@ -15,6 +16,13 @@
 
     <com.androidplot.xy.XYPlot
         android:id="@+id/rawDataPlot"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        androidPlot.rangeLabel="Range"
+        android:layout_weight="1"/>
+
+    <com.androidplot.xy.XYPlot
+        android:id="@+id/fftPlot"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         androidPlot.rangeLabel="Range"

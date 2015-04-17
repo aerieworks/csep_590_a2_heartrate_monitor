@@ -4,11 +4,14 @@ import android.util.Log;
 
 import com.richanna.data.DataFilter;
 import com.richanna.data.DataPoint;
+import com.richanna.data.DataProviderBase;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MeanShifter implements DataFilter<DataPoint> {
+public class MeanShifter extends DataProviderBase<DataPoint> implements DataFilter<DataPoint, DataPoint> {
+
+  private static final String TAG = "MeanShifter";
 
   private final int windowSize;
   private final List<DataPoint> dataPointWindow = new ArrayList<>();
@@ -20,7 +23,7 @@ public class MeanShifter implements DataFilter<DataPoint> {
   }
 
   @Override
-  public DataPoint apply(DataPoint dataPoint) {
+  public void tell(DataPoint dataPoint) {
     dataPointWindow.add(dataPoint);
     if (dataPointWindow.size() >= windowSize) {
       while (dataPointWindow.size() > windowSize) {
@@ -33,19 +36,16 @@ public class MeanShifter implements DataFilter<DataPoint> {
         for (int i = 0; i < currentMean.length; i++) {
           currentMean[i] = calculateMean(i);
         }
-        Log.d("MeanShifter", String.format("New mean: %f, %f, %f", currentMean[0], currentMean[1], currentMean[2]));
+        Log.d(TAG, String.format("New mean: %f", currentMean[0]));
       }
       emitCount = (emitCount + 1) % (windowSize / 2);
 
-      final float[] adjustedValues = new float[] {
-          source.getValues()[0] - currentMean[0],
-          source.getValues()[1] - currentMean[1],
-          source.getValues()[2] - currentMean[2]
-      };
-      return new DataPoint(dataPoint.getTimestamp(), adjustedValues);
+      final float[] adjustedValues = new float[source.getValues().length];
+      for (int i = 0; i < adjustedValues.length; i++) {
+          adjustedValues[i] = source.getValues()[i] - currentMean[i];
+      }
+      provideDatum(new DataPoint(dataPoint.getTimestamp(), adjustedValues));
     }
-
-    return null;
   }
 
   private float calculateMean(final int valueIndex) {

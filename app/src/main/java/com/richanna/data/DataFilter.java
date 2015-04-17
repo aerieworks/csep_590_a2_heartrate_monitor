@@ -1,5 +1,6 @@
 package com.richanna.data;
 
-public interface DataFilter<T> {
-  public T apply(final T datum);
+import com.richanna.events.Listener;
+
+public interface DataFilter<T, U> extends Listener<T>, DataProvider<U> {
 }

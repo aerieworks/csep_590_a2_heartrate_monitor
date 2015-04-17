@@ -86,8 +86,9 @@
     <orderEntry type="jdk" jdkName="Android API 19 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="support-v4-19.0.0" level="project" />
-    <orderEntry type="library" exported="" name="gdx-1.5.5" level="project" />
     <orderEntry type="library" exported="" name="androidplot-core-0.6.1" level="project" />
+    <orderEntry type="library" exported="" name="gdx-audio" level="project" />
+    <orderEntry type="library" exported="" name="gdx" level="project" />
     <orderEntry type="library" exported="" name="appcompat-v7-19.0.0" level="project" />
     <orderEntry type="module" module-name="openCVLibrary2410" exported="" />
   </component>

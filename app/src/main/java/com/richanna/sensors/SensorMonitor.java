@@ -7,8 +7,9 @@ import android.hardware.SensorManager;
 
 import com.richanna.data.DataGenerator;
 import com.richanna.data.DataPoint;
+import com.richanna.data.DataProviderBase;
 
-public class SensorMonitor extends DataGenerator implements SensorEventListener {
+public class SensorMonitor extends DataProviderBase<DataPoint> implements DataGenerator<DataPoint>, SensorEventListener {
 
   private final SensorManager sensorManager;
   private final int sensorType;
@@ -33,7 +34,7 @@ public class SensorMonitor extends DataGenerator implements SensorEventListener 
 
     if (event.sensor.getType() == sensorType) {
       final DataPoint dataPoint = new DataPoint(event.timestamp, event.values);
-      newDatumEvent.fire(dataPoint);
+      provideDatum(dataPoint);
     }
   }
 
