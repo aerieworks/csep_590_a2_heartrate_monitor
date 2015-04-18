@@ -7,6 +7,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.WindowManager;
+import android.widget.TextView;
 
 import com.androidplot.ui.TextOrientationType;
 import com.androidplot.xy.LineAndPointFormatter;
@@ -25,6 +26,8 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
 public class MonitorActivity extends ActionBarActivity implements Listener<DataSeries> {
+
+  private static final float[] FIR_COEFF_LOW_PASS_4_TAPS = new float[] { 0.04336642f,  0.91326716f,  0.04336642f };
 
   private CameraMonitor cameraMonitor;
   private XYPlot rawPlot;
@@ -72,6 +75,20 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
     final FftFilter intensityFft = new FftFilter(128);
     demeanedIntensity.addOnNewDatumListener(intensityFft);
     addSeriesToPlot(fftPlot, new WindowedSeries(intensityFft, "FFT", R.xml.line_point_formatter_acceleration_z, 64));
+
+    final TextView heartRateView = (TextView) findViewById(R.id.heartRateView);
+    intensityFft.getFrequencyCalculator().addOnNewDatumListener(new Listener<Float>() {
+      @Override
+      public void tell(Float frequency) {
+        final int bpm = (int)(frequency * 60.0f);
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            heartRateView.setText(Integer.toString(bpm));
+          }
+        });
+      }
+    });
   }
 
   @Override

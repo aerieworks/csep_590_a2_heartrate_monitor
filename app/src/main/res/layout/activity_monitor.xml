@@ -6,13 +6,46 @@
                                    android:orientation="vertical"
                                    tools:context=".MonitorActivity">
 
-    <com.richanna.heartratemonitor.CameraView
-        android:id="@+id/cameraView"
+    <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:visibility="gone"
-        opencv:show_fps="true"
-        android:layout_weight="1"/>
+        android:orientation="horizontal"
+        android:layout_weight="1">
+        <com.richanna.heartratemonitor.CameraView
+            android:id="@+id/cameraView"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:visibility="gone"
+            opencv:show_fps="true"
+            android:layout_weight="1"/>
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:background="@android:color/background_dark">
+            <TextView
+                android:id="@+id/heartRateView"
+                android:text="@string/default_heart_rate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:textColor="@android:color/primary_text_dark"
+                android:textSize="@dimen/heart_rate_value"
+                android:gravity="center"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/heart_rate_bpm_label"
+                android:background="@android:color/transparent"
+                android:textColor="@android:color/primary_text_dark"
+                android:textSize="@dimen/heart_rate_bpm_label"
+                android:gravity="center"/>
+        </LinearLayout>
+
+    </LinearLayout>
 
     <com.androidplot.xy.XYPlot
         android:id="@+id/rawDataPlot"

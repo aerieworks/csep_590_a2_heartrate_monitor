@@ -5,6 +5,7 @@ import android.util.Log;
 import com.badlogic.gdx.audio.analysis.FFT;
 import com.richanna.data.DataFilter;
 import com.richanna.data.DataPoint;
+import com.richanna.data.DataProvider;
 import com.richanna.data.DataProviderBase;
 
 import java.util.ArrayList;
@@ -59,7 +60,9 @@ public class FftFilter extends DataProviderBase<DataPoint> implements DataFilter
     frequencyCalculator.updateFrequency(timespan, windowSize, magnitude);
   }
 
-  private static class FrequencyCalculator extends DataProviderBase<Float> {
+  public static class FrequencyCalculator extends DataProviderBase<Float> {
+
+    private FrequencyCalculator() {}
 
     private void updateFrequency(final float timespan, final int sampleSize, final float[] magnitude) {
       int maxIndex = 0;

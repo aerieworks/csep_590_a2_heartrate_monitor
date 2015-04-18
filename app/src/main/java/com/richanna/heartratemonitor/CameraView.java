@@ -11,9 +11,6 @@ import org.opencv.android.JavaCameraView;
 import java.util.List;
 
 
-/**
- * TODO: document your custom view class.
- */
 public class CameraView extends JavaCameraView {
 
   public CameraView(Context context, AttributeSet attrs) {
