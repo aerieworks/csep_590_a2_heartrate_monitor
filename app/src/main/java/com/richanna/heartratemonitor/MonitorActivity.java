@@ -64,15 +64,14 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
 
     final IntensityFilter intensityFilter = new IntensityFilter();
     cameraMonitor.addOnNewDatumListener(intensityFilter);
-    //addSeriesToPlot(rawPlot, new StreamingSeries(intensityFilter, "Intensity", 0, R.xml.line_point_formatter_acceleration_x, 128));
 
     final MeanShifter demeanedIntensity = new MeanShifter(15);
     intensityFilter.addOnNewDatumListener(demeanedIntensity);
     addSeriesToPlot(rawPlot, new StreamingSeries(demeanedIntensity, "Demeaned", 0, R.xml.line_point_formatter_acceleration_y, 128));
 
-    final FftFilter intensityFft = new FftFilter(32);
+    final FftFilter intensityFft = new FftFilter(128);
     demeanedIntensity.addOnNewDatumListener(intensityFft);
-    addSeriesToPlot(fftPlot, new WindowedSeries(intensityFft, "FFT", R.xml.line_point_formatter_acceleration_z, 128));
+    addSeriesToPlot(fftPlot, new WindowedSeries(intensityFft, "FFT", R.xml.line_point_formatter_acceleration_z, 64));
   }
 
   @Override
