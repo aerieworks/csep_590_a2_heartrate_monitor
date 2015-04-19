@@ -1,5 +1,7 @@
 package com.richanna.data.filters;
 
+import android.util.Log;
+
 import com.richanna.data.DataPoint;
 import com.richanna.data.DataProviderBase;
 import com.richanna.events.Listener;
@@ -8,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FirFilter extends DataProviderBase<DataPoint> implements Listener<DataPoint> {
+
+  private static final String TAG = "FirFilter";
 
   private final float[] coefficients;
   private final List<DataPoint> contextValues;
@@ -29,11 +33,21 @@ public class FirFilter extends DataProviderBase<DataPoint> implements Listener<D
     }
     contextValues.add(eventData);
 
+    final StringBuilder buffer = new StringBuilder();
     float filteredValue = 0;
     for (int i = 0; i < contextValues.size(); i++) {
-      filteredValue += contextValues.get(i).getValues()[0] * coefficients[i];
+      final float x = contextValues.get(contextValues.size() - i - 1).getValues()[0];
+      final float coeff = coefficients[i];
+      filteredValue += x * coeff;
+
+      if (i > 0) {
+        buffer.append(" + ");
+      }
+      buffer.append(x).append("*").append(coeff);
     }
 
+    buffer.append(" = ").append(filteredValue);
+    Log.d(TAG, buffer.toString());
     provideDatum(new DataPoint(eventData.getTimestamp(), new float[] { filteredValue }));
   }
 }

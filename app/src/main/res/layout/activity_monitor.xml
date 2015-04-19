@@ -36,6 +36,7 @@
                 android:textSize="@dimen/heart_rate_value"
                 android:gravity="center"/>
             <TextView
+                android:id="@+id/heartRateLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/heart_rate_bpm_label"

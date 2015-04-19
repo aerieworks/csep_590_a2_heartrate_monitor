@@ -13,6 +13,7 @@ import com.androidplot.ui.TextOrientationType;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.XYPlot;
 import com.richanna.data.filters.FftFilter;
+import com.richanna.data.filters.FirFilter;
 import com.richanna.data.filters.IntensityFilter;
 import com.richanna.data.filters.MeanShifter;
 import com.richanna.data.visualization.DataSeries;
@@ -27,8 +28,9 @@ import org.opencv.android.OpenCVLoader;
 
 public class MonitorActivity extends ActionBarActivity implements Listener<DataSeries> {
 
-  private static final float[] FIR_COEFF_LOW_PASS_4_TAPS = new float[] { 0.04336642f,  0.91326716f,  0.04336642f };
-
+  //private static final float[] FIR_COEFF_LOW_PASS_3_TAPS = new float[] { 0.04336642f,  0.91326716f,  0.04336642f };
+  //private static final float[] FIR_COEFF_LOW_PASS_28FPS_3_TAPS = new float[] { 0.06115877f, 0.87768246f, 0.06115877f };
+  //private static final float[] FIR_COEFF_LOW_PASS_28FPS_5_TAPS = new float[] { 0.02142734f, 0.23197578f, 0.49319375f, 0.23197578f, 0.02142734f };
   private CameraMonitor cameraMonitor;
   private XYPlot rawPlot;
   private XYPlot fftPlot;
@@ -62,25 +64,24 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
     cameraView.setVisibility(SurfaceView.VISIBLE);
     cameraMonitor = new CameraMonitor(cameraView);
 
-    rawPlot = initializePlot(R.id.rawDataPlot);
-    fftPlot = initializePlot(R.id.fftPlot);
+    //rawPlot = initializePlot(R.id.rawDataPlot);
+    //fftPlot = initializePlot(R.id.fftPlot);
 
     final IntensityFilter intensityFilter = new IntensityFilter();
     cameraMonitor.addOnNewDatumListener(intensityFilter);
 
     final MeanShifter demeanedIntensity = new MeanShifter(15);
     intensityFilter.addOnNewDatumListener(demeanedIntensity);
-    addSeriesToPlot(rawPlot, new StreamingSeries(demeanedIntensity, "Demeaned", 0, R.xml.line_point_formatter_acceleration_y, 128));
 
     final FftFilter intensityFft = new FftFilter(128);
     demeanedIntensity.addOnNewDatumListener(intensityFft);
-    addSeriesToPlot(fftPlot, new WindowedSeries(intensityFft, "FFT", R.xml.line_point_formatter_acceleration_z, 64));
+    //addSeriesToPlot(fftPlot, new WindowedSeries(intensityFft, "FFT", R.xml.line_point_formatter_acceleration_x, 64));
 
     final TextView heartRateView = (TextView) findViewById(R.id.heartRateView);
     intensityFft.getFrequencyCalculator().addOnNewDatumListener(new Listener<Float>() {
       @Override
       public void tell(Float frequency) {
-        final int bpm = (int)(frequency * 60.0f);
+        final int bpm = (int) (frequency * 60.0f);
         runOnUiThread(new Runnable() {
           @Override
           public void run() {
