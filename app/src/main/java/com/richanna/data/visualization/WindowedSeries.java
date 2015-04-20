@@ -4,33 +4,30 @@ import android.util.Pair;
 
 import com.richanna.data.DataPoint;
 import com.richanna.data.DataProvider;
+import com.richanna.data.DataWindow;
+import com.richanna.events.Listener;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class WindowedSeries extends DataSeries {
+public class WindowedSeries extends DataSeries implements Listener<DataWindow<DataPoint<Float>>> {
 
-  private final int windowSize;
   private List<Pair<Number, Number>> currentWindow;
-  private List<Pair<Number, Number>> nextWindow;
 
-  public WindowedSeries(final DataProvider<DataPoint> source, final String title, final int formatterId, final int windowSize) {
-    super(source, title, DomainSource.Index, formatterId);
-    this.windowSize = windowSize;
-    this.currentWindow = new ArrayList<>(windowSize);
-    this.nextWindow = new ArrayList<>(windowSize);
+  public WindowedSeries(final DataProvider<DataWindow<DataPoint<Float>>> source, final String title, final int formatterId) {
+    super(title, formatterId);
+    this.currentWindow = new ArrayList<>();
+    source.addOnNewDatumListener(this);
   }
 
   @Override
-  public void tell(final DataPoint dataPoint) {
-    nextWindow.add(new Pair<Number, Number>(nextWindow.size(), dataPoint.getValues()[0]));
-    if (nextWindow.size() == windowSize) {
-      final List<Pair<Number, Number>> temp = currentWindow;
-      currentWindow = nextWindow;
-      nextWindow = temp;
-      nextWindow.clear();
-      seriesUpdatedEvent.fire(this);
+  public void tell(final DataWindow<DataPoint<Float>> window) {
+    currentWindow.clear();
+    for (final DataPoint<Float> dataPoint : window.getData()) {
+      currentWindow.add(new Pair<Number, Number>(currentWindow.size(), dataPoint.getValue()));
     }
+
+    seriesUpdatedEvent.fire(this);
   }
 
   @Override

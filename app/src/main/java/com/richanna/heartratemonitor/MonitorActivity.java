@@ -7,15 +7,22 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.WindowManager;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.androidplot.ui.TextOrientationType;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.XYPlot;
+import com.richanna.data.DataPoint;
+import com.richanna.data.DataProvider;
+import com.richanna.data.DataWindow;
 import com.richanna.data.filters.FftFilter;
 import com.richanna.data.filters.FirFilter;
 import com.richanna.data.filters.IntensityFilter;
-import com.richanna.data.filters.MeanShifter;
+import com.richanna.data.filters.DemeanFilter;
+import com.richanna.data.filters.MedianFilter;
+import com.richanna.data.filters.PixelSampler;
+import com.richanna.data.filters.VectorFilter;
 import com.richanna.data.visualization.DataSeries;
 import com.richanna.data.visualization.StreamingSeries;
 import com.richanna.data.visualization.WindowedSeries;
@@ -26,13 +33,18 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
-public class MonitorActivity extends ActionBarActivity implements Listener<DataSeries> {
+public class MonitorActivity extends ActionBarActivity {
 
-  //private static final float[] FIR_COEFF_LOW_PASS_3_TAPS = new float[] { 0.04336642f,  0.91326716f,  0.04336642f };
-  //private static final float[] FIR_COEFF_LOW_PASS_28FPS_3_TAPS = new float[] { 0.06115877f, 0.87768246f, 0.06115877f };
-  //private static final float[] FIR_COEFF_LOW_PASS_28FPS_5_TAPS = new float[] { 0.02142734f, 0.23197578f, 0.49319375f, 0.23197578f, 0.02142734f };
+  private static final float[] FIR_COEFF_15FPS_3TAP = new float[] { 0.00560897f, 0.98878207f, 0.00560897f };//0.04336642f, 0.91326716f, 0.04336642f };
+  private static final float[] FIR_COEFF_25FPS_3TAP = new float[] { 0.05923019f, 0.88153962f, 0.05923019f };
+  private static final float[] FIR_COEFF_25FPS_6TAP = new float[] { 0.00809077f, 0.11386596f, 0.37804327f, 0.37804327f, 0.11386596f, 0.00809077f };
+
+  private static final int FFT_WINDOW_SIZE = 256;
+  private static final float MAX_HEART_RATE_HZ = 4.0f;
+
   private CameraMonitor cameraMonitor;
-  private XYPlot rawPlot;
+  private PixelSampler streamRoot;
+  private XYPlot signalPlot;
   private XYPlot fftPlot;
 
   private final BaseLoaderCallback openCvLoadListener = new BaseLoaderCallback(this) {
@@ -64,32 +76,9 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
     cameraView.setVisibility(SurfaceView.VISIBLE);
     cameraMonitor = new CameraMonitor(cameraView);
 
-    //rawPlot = initializePlot(R.id.rawDataPlot);
-    //fftPlot = initializePlot(R.id.fftPlot);
-
-    final IntensityFilter intensityFilter = new IntensityFilter();
-    cameraMonitor.addOnNewDatumListener(intensityFilter);
-
-    final MeanShifter demeanedIntensity = new MeanShifter(15);
-    intensityFilter.addOnNewDatumListener(demeanedIntensity);
-
-    final FftFilter intensityFft = new FftFilter(128);
-    demeanedIntensity.addOnNewDatumListener(intensityFft);
-    //addSeriesToPlot(fftPlot, new WindowedSeries(intensityFft, "FFT", R.xml.line_point_formatter_acceleration_x, 64));
-
-    final TextView heartRateView = (TextView) findViewById(R.id.heartRateView);
-    intensityFft.getFrequencyCalculator().addOnNewDatumListener(new Listener<Float>() {
-      @Override
-      public void tell(Float frequency) {
-        final int bpm = (int) (frequency * 60.0f);
-        runOnUiThread(new Runnable() {
-          @Override
-          public void run() {
-            heartRateView.setText(Integer.toString(bpm));
-          }
-        });
-      }
-    });
+    signalPlot = initializePlot(R.id.signalPlot);
+    fftPlot = initializePlot(R.id.fftPlot);
+    resetMonitors();
   }
 
   @Override
@@ -99,8 +88,8 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
     if (cameraMonitor != null) {
       cameraMonitor.resume();
     }
-    if (rawPlot != null) {
-      rawPlot.redraw();
+    if (signalPlot != null) {
+      signalPlot.redraw();
     }
     if (fftPlot != null) {
       fftPlot.redraw();
@@ -129,22 +118,14 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
     // as you specify a parent activity in AndroidManifest.xml.
     int id = item.getItemId();
 
-    //noinspection SimplifiableIfStatement
-    if (id == R.id.action_settings) {
+    if (id == R.id.action_reset) {
+      resetMonitors();
+      return true;
+    } else if (id == R.id.action_settings) {
       return true;
     }
 
     return super.onOptionsItemSelected(item);
-  }
-
-  @Override
-  public void tell(final DataSeries series) {
-    if (rawPlot != null) {
-      rawPlot.redraw();
-    }
-    if (fftPlot != null) {
-      fftPlot.redraw();
-    }
   }
 
   private XYPlot initializePlot(final int plotId) {
@@ -161,10 +142,105 @@ public class MonitorActivity extends ActionBarActivity implements Listener<DataS
   }
 
   private void addSeriesToPlot(final XYPlot plot, final DataSeries series) {
-    series.onSeriesUpdated.listen(this);
+    series.onSeriesUpdated.listen(new Listener<DataSeries>() {
+      @Override
+      public void tell(DataSeries eventData) {
+        //plot.redraw();
+      }
+    });
 
     final LineAndPointFormatter formatter = new LineAndPointFormatter();
     formatter.configure(this, series.getFormatterId());
     plot.addSeries(series, formatter);
+  }
+
+  private void initializeProgressBar(final DataProvider<DataPoint<Float>> progressAdvancer, final FftFilter fftFilter) {
+    final ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
+    progressBar.setProgress(0);
+    progressBar.setMax(FFT_WINDOW_SIZE);
+
+    fftFilter.addOnNewDatumListener(new Listener<DataWindow<DataPoint<Float>>>() {
+      @Override
+      public void tell(DataWindow<DataPoint<Float>> eventData) {
+        progressBar.setProgress(0);
+        progressBar.setMax((int)(FFT_WINDOW_SIZE * 0.25));
+        signalPlot.redraw();
+        fftPlot.redraw();
+      }
+    });
+
+    progressAdvancer.addOnNewDatumListener(new Listener<DataPoint<Float>>() {
+      @Override
+      public void tell(DataPoint<Float> eventData) {
+        progressBar.incrementProgressBy(1);
+      }
+    });
+  }
+
+  private void initializeHeartbeatMonitor(final DataProvider<DataWindow<DataPoint<Float>>> provider) {
+    final TextView heartRateView = (TextView) findViewById(R.id.heartRateView);
+    heartRateView.setText(getString(R.string.default_heart_rate));
+
+    provider.addOnNewDatumListener(new Listener<DataWindow<DataPoint<Float>>>() {
+      @Override
+      public void tell(DataWindow<DataPoint<Float>> eventData) {
+        final float timespan = (float)(eventData.getEndTime() - eventData.getStartTime())/1000000000f;
+        final float sampleRate = (float)FFT_WINDOW_SIZE / timespan;
+        final float rateStep = (sampleRate / 2.0f) / (float)eventData.getSize();
+
+        Log.d("MonitorActivity", String.format("Sample rate: %f", sampleRate));
+        int maxIndex = 0;
+        float maxValue = 0;
+        int index = 0;
+        for (final DataPoint<Float> dataPoint : eventData.getData()) {
+          if (index * rateStep > MAX_HEART_RATE_HZ) {
+            break;
+          }
+
+          if (dataPoint.getValue() > maxValue) {
+            maxIndex = index;
+            maxValue = dataPoint.getValue();
+          }
+
+          index += 1;
+        }
+
+        final float frequency = (float)maxIndex * rateStep;
+        final int bpm = (int) (frequency * 60.0f);
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            heartRateView.setText(Integer.toString(bpm));
+          }
+        });
+      }
+    });
+  }
+
+  private void resetMonitors() {
+    signalPlot.clear();
+    fftPlot.clear();
+    fftPlot.redraw();
+
+    if (streamRoot != null) {
+      cameraMonitor.removeOnNewDatumListener(streamRoot);
+    }
+
+    streamRoot = new PixelSampler(4, 1, cameraMonitor);
+    final DataProvider<DataPoint<Float>> stream =
+        new DemeanFilter(15,
+            new MedianFilter(8,
+                new FirFilter(FIR_COEFF_25FPS_6TAP,
+                    new IntensityFilter(streamRoot)
+                )
+            )
+        );
+    addSeriesToPlot(signalPlot, new StreamingSeries(stream, "Intensity", R.xml.line_point_formatter_acceleration_x, FFT_WINDOW_SIZE));
+
+    final FftFilter intensityFft = new FftFilter(FFT_WINDOW_SIZE, stream);
+    addSeriesToPlot(fftPlot, new WindowedSeries(intensityFft, "FFT", R.xml.line_point_formatter_acceleration_x));
+
+    initializeProgressBar(stream, intensityFft);
+    initializeHeartbeatMonitor(intensityFft);
   }
 }

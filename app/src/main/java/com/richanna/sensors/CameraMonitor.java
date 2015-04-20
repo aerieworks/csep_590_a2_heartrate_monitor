@@ -28,7 +28,6 @@ public class CameraMonitor extends DataProviderBase<CameraBridgeViewBase.CvCamer
 
   @Override
   public void onCameraViewStopped() {
-    // Do nothing.
     Log.d(TAG, "View stopped");
     cameraView.disableFlash();
   }

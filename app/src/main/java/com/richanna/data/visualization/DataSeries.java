@@ -3,24 +3,18 @@ package com.richanna.data.visualization;
 import android.util.Pair;
 
 import com.androidplot.xy.XYSeries;
-import com.richanna.data.DataPoint;
-import com.richanna.data.DataProvider;
 import com.richanna.events.Event;
-import com.richanna.events.Listener;
 
-public abstract class DataSeries implements Listener<DataPoint>, XYSeries {
+public abstract class DataSeries implements XYSeries {
 
   private final String title;
-  private final DomainSource domainSource;
   private final int formatterId;
   protected final Event<DataSeries> seriesUpdatedEvent = new Event<>();
   public final Event<DataSeries>.Listenable onSeriesUpdated = seriesUpdatedEvent.listenable;
 
-  protected DataSeries(final DataProvider<DataPoint> source, final String title, final DomainSource domainSource, final int formatterId) {
+  protected DataSeries(final String title, final int formatterId) {
     this.title = title;
-    this.domainSource = domainSource;
     this.formatterId = formatterId;
-    source.addOnNewDatumListener(this);
   }
 
   protected abstract Pair<Number, Number> getDataPoint(final int index);
@@ -30,15 +24,11 @@ public abstract class DataSeries implements Listener<DataPoint>, XYSeries {
 
   @Override
   public Number getX(int index) {
-    if (getSize() > index) {
-      if (domainSource == DomainSource.Index) {
-        return index;
-      } else {
-        return getDataPoint(index).first;
-      }
+    if (getSize() > index || index == 0) {
+      return index;
     }
 
-    return index == 0 ? 0 : null;
+    return null;
   }
 
   @Override
@@ -59,10 +49,5 @@ public abstract class DataSeries implements Listener<DataPoint>, XYSeries {
   @Override
   public String getTitle() {
     return title;
-  }
-
-  public static enum DomainSource {
-    Value,
-    Index
   }
 }
