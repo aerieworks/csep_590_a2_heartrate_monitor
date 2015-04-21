@@ -1,5 +1,7 @@
 package com.richanna.data.filters;
 
+import android.util.Log;
+
 import com.badlogic.gdx.audio.analysis.FFT;
 import com.richanna.data.DataFilter;
 import com.richanna.data.DataPoint;
@@ -12,12 +14,16 @@ import java.util.List;
 
 public class FftFilter extends DataProviderBase<DataWindow<DataPoint<Float>>> implements DataFilter<DataPoint<Float>, DataWindow<DataPoint<Float>>> {
 
+  private static final String TAG = "FftFilter";
+
   private final List<DataPoint<Float>> dataPoints = new ArrayList<>();
   private final int windowSize;
 
   public FftFilter(final int windowSize, final DataProvider<DataPoint<Float>> source) {
     this.windowSize = windowSize;
     source.addOnNewDatumListener(this);
+
+    Log.i(TAG, String.format("Window size: %d", this.windowSize));
   }
 
   @Override

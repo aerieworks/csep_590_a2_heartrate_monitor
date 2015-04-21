@@ -7,20 +7,22 @@ import com.richanna.events.Listener;
 
 public class DataProviderBase<T> implements DataProvider<T> {
 
+  private static final String TAG = "DataProviderBase";
+
   private Event<T> newDatumEvent = new Event<>();
 
   protected void provideDatum(final T datum) {
-    //Log.d(this.getClass().getSimpleName(), String.format("Value: %s", datum.toString()));
     newDatumEvent.fire(datum);
   }
 
   @Override
   public void addOnNewDatumListener(final Listener<T> listener) {
+    Log.i(TAG, String.format("%s is now listening to %s", listener.getClass().getSimpleName(), this.getClass().getSimpleName()));
     newDatumEvent.listenable.listen(listener);
   }
 
   @Override
-  public void removeOnNewDatumListener(Listener<T> listener) {
-    newDatumEvent.listenable.ignore(listener);
+  public void clearListeners() {
+    newDatumEvent.listenable.clearListeners();
   }
 }

@@ -20,8 +20,8 @@ public class Event<T> {
       Event.this.listeners.add(listener);
     }
 
-    public void ignore(final Listener<T> listener) {
-      Event.this.listeners.remove(listener);
+    public void clearListeners() {
+      Event.this.listeners.clear();
     }
   }
 }

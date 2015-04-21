@@ -12,6 +12,8 @@ import java.util.List;
 
 public class DemeanFilter extends DataProviderBase<DataPoint<Float>> implements DataFilter<DataPoint<Float>, DataPoint<Float>> {
 
+  private static final String TAG = "DemeanFilter";
+
   private final int windowSize;
   private final List<DataPoint<Float>> window;
   private boolean hasMean = false;
@@ -21,6 +23,8 @@ public class DemeanFilter extends DataProviderBase<DataPoint<Float>> implements 
     this.windowSize = windowSize;
     window = new ArrayList<>(windowSize);
     source.addOnNewDatumListener(this);
+
+    Log.i(TAG, String.format("Window size: %d", this.windowSize));
   }
 
   @Override
@@ -32,11 +36,9 @@ public class DemeanFilter extends DataProviderBase<DataPoint<Float>> implements 
 
     window.add(dataPoint);
     windowTotal += dataPoint.getValue();
-    Log.d("DemeanFilter", String.format("Added point: %f", dataPoint.getValue()));
 
     if (window.size() == windowSize) {
       final float mean = windowTotal / (float) windowSize;
-      Log.d("DemeanFilter", String.format("Mean: %f / %d = %f", windowTotal, windowSize, mean));
       if (!hasMean) {
         hasMean = true;
         for (int i = 0; i < windowSize / 2; i++) {
@@ -50,7 +52,6 @@ public class DemeanFilter extends DataProviderBase<DataPoint<Float>> implements 
 
   private void provideDatum(final int sourceIndex, final float mean) {
     final DataPoint<Float> source = window.get(sourceIndex);
-    Log.d("DemeanFilter", String.format("Generating for source: %d: %f (%f)", sourceIndex, source.getValue(), mean));
     provideDatum(new DataPoint<>(source.getTimestamp(), source.getValue() - mean));
   }
 }

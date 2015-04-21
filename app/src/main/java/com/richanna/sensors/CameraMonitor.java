@@ -40,7 +40,7 @@ public class CameraMonitor extends DataProviderBase<CameraBridgeViewBase.CvCamer
 
   @Override
   public void pause() {
-    Log.d(TAG, "pausing");
+    Log.d(TAG, "Pausing");
    cameraView.disableView();
   }
 

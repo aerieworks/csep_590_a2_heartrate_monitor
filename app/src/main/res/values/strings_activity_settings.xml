@@ -1,0 +1,53 @@
+<resources>
+    <string name="title_activity_settings">Settings</string>
+
+    <string name="pref_header_general">General</string>
+
+    <string name="pref_key_image_sample_mode">image_sample_mode</string>
+    <string name="pref_title_image_sample_mode">Image sampling mode</string>
+    <string name="pref_default_image_sample_mode">2</string>
+    <string-array name="pref_image_sample_mode_names">
+        <item>Center</item>
+        <item>Corners</item>
+        <item>Even Distribution</item>
+        <item>Random</item>
+    </string-array>
+    <string-array name="pref_image_sample_mode_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string name="pref_key_image_sample_size">image_sample_size</string>
+    <string name="pref_title_image_sample_size">Image sample size</string>
+    <string name="pref_default_image_sample_size">256</string>
+
+    <string name="pref_key_intensity_calculation_mode">intensity_calculation_mode</string>
+    <string name="pref_title_intensity_calculation_mode">Intensity calculation mode</string>
+    <string name="pref_default_intensity_calculation_mode">0</string>
+    <string-array name="pref_intensity_calculation_mode_names">
+        <item>RGB Average</item>
+        <item>Red Channel Only</item>
+        <item>Grayscale</item>
+    </string-array>
+    <string-array name="pref_intensity_calculation_mode_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string name="pref_key_median_filter_window_size">key_median_filter_window_size</string>
+    <string name="pref_title_median_filter_window_size">Median filter window size</string>
+    <string name="pref_description_median_filter_window_size">
+        Number of samples to calculate median over for the median filter.
+    </string>
+    <string name="pref_default_median_filter_window_size">8</string>
+
+    <string name="pref_key_demean_filter_window_size">key_demean_filter_window_size</string>
+    <string name="pref_title_demean_filter_window_size">Demean filter window size</string>
+    <string name="pref_description_demean_filter_window_size">
+        Number of samples to calculate mean over for the demean filter.
+    </string>
+    <string name="pref_default_demean_filter_window_size">15</string>
+</resources>

@@ -1,5 +1,7 @@
 package com.richanna.data.filters;
 
+import android.util.Log;
+
 import com.richanna.data.DataFilter;
 import com.richanna.data.DataPoint;
 import com.richanna.data.DataProvider;
@@ -11,12 +13,16 @@ import java.util.List;
 
 public class MedianFilter extends DataProviderBase<DataPoint<Float>> implements DataFilter<DataPoint<Float>, DataPoint<Float>> {
 
+  private static final String TAG = "MedianFilter";
+
   private final int windowSize;
   private final List<Float> window = new ArrayList<>();
 
   public MedianFilter(final int windowSize, final DataProvider<DataPoint<Float>> source) {
     this.windowSize = windowSize;
     source.addOnNewDatumListener(this);
+
+    Log.i(TAG, String.format("Window size: %d", this.windowSize));
   }
 
   @Override

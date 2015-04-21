@@ -25,6 +25,13 @@ public class FirFilter extends DataProviderBase<DataPoint<Float>> implements Lis
 
     contextValues = new ArrayList<>(coefficients.length);
     source.addOnNewDatumListener(this);
+
+    final StringBuilder message = new StringBuilder("Coefficients: [");
+    for (final float coeff : this.coefficients) {
+      message.append(" ").append(coeff);
+    }
+    message.append(" ]");
+    Log.i(TAG, message.toString());
   }
 
   @Override
@@ -35,21 +42,13 @@ public class FirFilter extends DataProviderBase<DataPoint<Float>> implements Lis
     contextValues.add(eventData);
 
     if (contextValues.size() == coefficients.length) {
-      final StringBuilder buffer = new StringBuilder();
       float filteredValue = 0;
       for (int i = 0; i < contextValues.size(); i++) {
         final float x = contextValues.get(contextValues.size() - i - 1).getValue();
         final float coeff = coefficients[i];
         filteredValue += x * coeff;
-
-        if (i > 0) {
-          buffer.append(" + ");
-        }
-        buffer.append(x).append("*").append(coeff);
       }
 
-      buffer.append(" = ").append(filteredValue);
-      Log.d(TAG, buffer.toString());
       provideDatum(new DataPoint<>(eventData.getTimestamp(), filteredValue));
     }
   }
